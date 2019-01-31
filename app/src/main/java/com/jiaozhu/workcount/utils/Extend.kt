@@ -99,12 +99,16 @@ val Long.format: String
         val second = (this - day * dd - hour * hh - minute * mi) / ss
         val milliSecond = this - day * dd - hour * hh - minute * mi - second * ss
 
-        val strDay = if (day < 10) "0$day" else "" + day
+
+        fun check(str: String): String {
+            if (str == "00") return ""
+            return str
+        }
+
+        val strDay = check(if (day < 10) "0$day" else "" + day)
         val strHour = if (hour < 10) "0$hour" else "" + hour
         val strMinute = if (minute < 10) "0$minute" else "" + minute
         val strSecond = if (second < 10) "0$second" else "" + second
-        var strMilliSecond = if (milliSecond < 10) "0$milliSecond" else "" + milliSecond
-        strMilliSecond = if (milliSecond < 100) "0$strMilliSecond" else "" + strMilliSecond
-        return "$strDay $strHour:$strMinute:$strSecond $strMilliSecond"
+        return "$strDay $strHour:$strMinute:$strSecond"
     }
 

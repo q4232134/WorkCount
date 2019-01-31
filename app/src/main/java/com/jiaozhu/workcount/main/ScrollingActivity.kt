@@ -11,13 +11,14 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
-import com.google.android.material.snackbar.Snackbar
+import com.afollestad.materialdialogs.list.listItems
 import com.jiaozhu.workcount.CApplication
 import com.jiaozhu.workcount.data.*
 import com.jiaozhu.workcount.main.adapter.CountAdapter
 import com.jiaozhu.workcount.main.adapter.OnItemLongClickListener
 import com.jiaozhu.workcount.main.viewModel.ScrollingModel
 import com.jiaozhu.workcount.service.WorkService
+import com.jiaozhu.workcount.utils.format
 import com.jiaozhu.workcount.utils.getEndTime
 import com.jiaozhu.workcount.utils.getStartTime
 import com.jiaozhu.workcount.utils.toast
@@ -30,14 +31,14 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     lateinit var historyDao: HistoryDao
     lateinit var viewModel: ScrollingModel
     lateinit var adapter: CountAdapter
+    lateinit var dialog: MaterialDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(com.jiaozhu.workcount.R.layout.activity_scrolling)
         setSupportActionBar(toolbar)
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+            dialog.show()
         }
         val ap = application as CApplication
         ap.serviceStartTime = Date()
@@ -53,7 +54,7 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     private fun initViewModel() {
         viewModel = ViewModelProviders.of(this).get(ScrollingModel::class.java)
         viewModel.lastNodeName = historyDao.getLastNodeName()
-        viewModel.historyList =historyDao.getNodeByTime(Date().getStartTime(), Date().getEndTime())
+        viewModel.historyList = historyDao.getNodeByTime(Date().getStartTime(), Date().getEndTime())
         viewModel.lastNode = historyDao.getLastNodeLive()
         mRecyclerView.layoutManager = LinearLayoutManager(this)
         adapter = CountAdapter()
@@ -63,7 +64,16 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
             toolbar_layout.title = it.ssidDes
         })
         viewModel.historyList.observe(this, Observer {
-            val zip = it.zipWithNext { a, b -> WorkCount(a.ssid, a.createTime, b.createTime) }
+            val zip = it.zipWithNext { a, b -> WorkCount(a.ssid, a.createTime, b.createTime) }.reversed()
+            val count = zip.groupBy { it.ssid.ssidDes }.values.map {
+                WorkCount(
+                    it.first().ssid,
+                    it.first().startTime,
+                    it.last().endTime,
+                    it.map { it.length }.sum()
+                )
+            }.sortedByDescending(WorkCount::length)
+            genCountList(count)
             adapter.submitList(zip)
         })
         viewModel.lastNode.observe(
@@ -99,6 +109,13 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
                 toast("设置成功")
                 adapter.notifyDataSetChanged()
             }.show()
+        }
+    }
+
+    private fun genCountList(list: List<WorkCount>) {
+        dialog = MaterialDialog(this).show {
+            listItems(items = list.map { "${it.ssid.ssidDes}     ${it.length.format}" })
+            { dialog, index, text -> }
         }
     }
 
