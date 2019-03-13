@@ -101,16 +101,17 @@ data class WorkCount(
     val endTime: Date?,
     val length: Long? = null//持续时长
 ) {
-    fun getLength(): Long = length ?: (endTime ?: Date()).time - startTime.time
+    fun getEnd(): Date = endTime ?: Date()
+    fun getLength(): Long = length ?: getEnd().time - startTime.time
     val des: String get() = ssid.ssidDes
     val workLength: Long
         get() {
             //午休时间
             val sleepTime =
                 if (apFormat.format(startTime).toInt() <= 12 &&
-                    apFormat.format(Date()).toInt() >= 14
+                    apFormat.format(getEnd()).toInt() >= 14
                 ) (2 * 60 * 60 * 1000) else 0
-            return (endTime ?: Date()).time - startTime.time - sleepTime
+            return getEnd().time - startTime.time - sleepTime
         }
 
     companion object {

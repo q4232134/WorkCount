@@ -26,8 +26,10 @@ public class CountHisAdapter(callback: DiffCallback<WorkCount> = DiffCallback())
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val model = getItem(position) ?: return
         with(holder.itemView) {
+            val days = (model.getEnd().time - model.startTime.time) / (24 * 60 * 60 * 1000)
             mTitle.text =
-                "${model.startTime.format("MM月dd日")}     ${model.startTime.format()} -- ${(model.endTime ?: Date()).format()}"
+                "${model.startTime.format("E  MM月dd日")}     ${model.startTime.format()} -- ${(model.endTime
+                    ?: Date()).format()}${if (days > 0) "+$days" else ""}"
             mTime.text = model.workLength.format
             mLayout.setOnLongClickListener {
                 onItemLongClickListener?.onItemLongClick(model, position) ?: false

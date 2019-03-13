@@ -114,11 +114,11 @@ val Long.format: String
             return str
         }
 
-        val strDay = check(if (day < 10) "0$day" else "" + day)
-        val strHour = if (hour < 10) "0$hour" else "" + hour
-        val strMinute = if (minute < 10) "0$minute" else "" + minute
-        val strSecond = if (second < 10) "0$second" else "" + second
-        return "$strDay $strHour:$strMinute:$strSecond"
+        val strDay = String.format("%02d", day)
+        val strHour = String.format("%02d", hour)
+        val strMinute = String.format("%02d", minute)
+        val strSecond = String.format("%02d", second)
+        return "${if (day != 0L)"${strDay}天" else ""}$strHour:$strMinute:$strSecond"
     }
 
 

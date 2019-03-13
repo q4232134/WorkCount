@@ -13,7 +13,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             android:foreground="?android:attr/selectableItemBackground"
-            android:padding="5dp">
+            android:padding="3dp">
 
         <TextView
                 android:id="@+id/mTitle"
