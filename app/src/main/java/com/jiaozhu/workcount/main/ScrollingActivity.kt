@@ -13,6 +13,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import com.jiaozhu.workcount.CApplication
+import com.jiaozhu.workcount.R
 import com.jiaozhu.workcount.data.*
 import com.jiaozhu.workcount.main.adapter.CountAdapter
 import com.jiaozhu.workcount.main.adapter.OnItemLongClickListener
@@ -24,6 +25,7 @@ import com.jiaozhu.workcount.utils.getStartTime
 import com.jiaozhu.workcount.utils.toast
 import kotlinx.android.synthetic.main.activity_scrolling.*
 import kotlinx.android.synthetic.main.content_scrolling.*
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -32,14 +34,34 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     lateinit var viewModel: ScrollingModel
     lateinit var adapter: CountAdapter
     lateinit var dialog: MaterialDialog
+    private val apFormat = SimpleDateFormat("HH", Locale.CHINA)
+    //午休时间
+    val sleepTime
+        get() = viewModel.firstTargetNode?.let {
+            if (apFormat.format(it.createTime).toInt() <= 12 &&
+                apFormat.format(Date()).toInt() >= 14
+            ) 2 * 60 * 60 * 1000 else 0
+        } ?: 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(com.jiaozhu.workcount.R.layout.activity_scrolling)
+        setContentView(R.layout.activity_scrolling)
         setSupportActionBar(toolbar)
-        fab.setOnClickListener { view ->
+        fab.setOnClickListener {
+            genCountList(viewModel.showList)
             dialog.show()
         }
+//        fab.setOnLongClickListener {
+//            getDatabasePath("database").let {
+//                Tools.copyFile(
+//                    it.path,
+//                    getExternalFilesDir(null)
+//                        .path + File.separator + "back.db"
+//                )
+//            }
+//            toast("导出完成")
+//            true
+//        }
         val ap = application as CApplication
         ap.serviceStartTime = Date()
         historyDao = ap.db.historyDao()
@@ -64,35 +86,36 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
             toolbar_layout.title = it.ssidDes
         })
         viewModel.historyList.observe(this, Observer {
+            viewModel.firstTargetNode = it.firstOrNull { it.ssid.ssidDes == Preferences.targetDes }
             val zip = it.zipWithNext { a, b -> WorkCount(a.ssid, a.createTime, b.createTime) }.reversed()
-            val count = zip.groupBy { it.ssid.ssidDes }.values.map {
-                WorkCount(
-                    it.first().ssid,
-                    it.first().startTime,
-                    it.last().endTime,
-                    it.map { it.length }.sum()
-                )
-            }.sortedByDescending(WorkCount::length)
-            genCountList(count)
+            viewModel.showList = zip
             adapter.submitList(zip)
         })
         viewModel.lastNode.observe(
             this,
             Observer<History> {
-                mMeter.base = SystemClock.elapsedRealtime() - (Date().time - it.createTime.time)
+                //如果当前地点为公司，则显示公司总工作时长，否则显示当前地点时长
+                val startTime =
+                    if (viewModel.lastNodeName.value?.ssidDes == Preferences.targetDes) (viewModel.firstTargetNode?.createTime
+                        ?: Date()).time + sleepTime else it.createTime.time
+                mMeter.base = SystemClock.elapsedRealtime() - (Date().time - startTime)
                 mMeter.start()
             })
     }
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(com.jiaozhu.workcount.R.menu.menu_scrolling, menu)
+        menuInflater.inflate(R.menu.menu_scrolling, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            com.jiaozhu.workcount.R.id.action_settings -> true
+            R.id.action_history -> {
+                val i = Intent(this, HistoryActivity::class.java)
+                startActivity(i)
+                return true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -103,18 +126,33 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     }
 
     private fun showTextDialog(model: WorkCount) {
-        MaterialDialog(this).title(text = "标记").message(text = "设置${model.ssid}的地点：").show {
-            input(hint = model.ssid.ssidDes) { _, text ->
-                Preferences.setString(model.ssid, text.toString())
-                toast("设置成功")
-                adapter.notifyDataSetChanged()
-            }.show()
-        }
+        MaterialDialog(this).title(text = "标记").message(text = "设置${model.ssid}的地点：")
+            .neutralButton(text = "设置为目标") { Preferences.targetDes = model.ssid.ssidDes }.show {
+                input(hint = model.ssid.ssidDes) { _, text ->
+                    Preferences.setString(model.ssid, text.toString())
+                    toast("设置成功")
+                    adapter.notifyDataSetChanged()
+                }.show()
+            }
     }
 
     private fun genCountList(list: List<WorkCount>) {
+        val counts = list.groupBy { it.ssid.ssidDes }.values.map {
+            WorkCount(
+                it.first().ssid,
+                it.first().startTime,
+                it.last().endTime,
+                it.map { it.getLength() }.sum()
+            )
+        }.sortedByDescending(WorkCount::getLength)
+        val startTime = list.lastOrNull { it.des.ssidDes == Preferences.targetDes }?.startTime
+        var endTime = list.firstOrNull { it.des.ssidDes == Preferences.targetDes }?.endTime
+        if (viewModel.lastNodeName.value?.ssidDes == Preferences.targetDes) endTime = Date()
+        val desList = if (startTime != null && endTime != null)
+            mutableListOf<String>("${startTime.format()}<---->${endTime.format()}    ${(endTime.time - startTime.time - sleepTime).format}") else mutableListOf()
+        desList.addAll(counts.map { "${it.ssid.ssidDes}     ${it.getLength().format}" })
         dialog = MaterialDialog(this).show {
-            listItems(items = list.map { "${it.ssid.ssidDes}     ${it.length.format}" })
+            listItems(items = desList)
             { dialog, index, text -> }
         }
     }

@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="com.jiaozhu.workcount.main.ScrollingActivity">
+    <item
+            android:id="@+id/action_last"
+            android:title="上月"
+            android:orderInCategory="100"
+            app:showAsAction="always"/>
+    <item
+            android:id="@+id/action_next"
+            android:title="下月"
+            android:orderInCategory="100"
+            app:showAsAction="always"/>
+</menu>

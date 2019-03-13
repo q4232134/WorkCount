@@ -3,6 +3,7 @@ package com.jiaozhu.workcount.data
 import androidx.lifecycle.LiveData
 import androidx.paging.DataSource
 import androidx.room.*
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -56,6 +57,32 @@ interface HistoryDao : BaseDao<History> {
     @Query("select * from History where createTime between :start and :end")
     fun getNodeByTime(start: Date, end: Date): LiveData<List<History>>
 
+    /**
+     *通过指定目标来统计目标时长
+     */
+    @Query(
+        """
+            SELECT
+        *,
+        min( createTime ) AS startTime,
+        (
+        SELECT
+            min( b.createTime )
+        FROM
+            History b
+        WHERE
+        b.createTime > max( a.createTime )) AS endTime
+    FROM
+        History a
+    WHERE
+        ssid IN  ( :target )
+        and createTime between :start and :end
+    GROUP BY
+        date( createTime / 1000, 'unixepoch', '+8 hours' )
+    """
+    )
+    fun getDailyCount(start: Date, end: Date, target: List<String>): List<WorkCount>
+
 }
 
 
@@ -71,10 +98,25 @@ data class History(
 data class WorkCount(
     val ssid: String,
     val startTime: Date,
-    val endTime: Date,
-    val length: Long = endTime.time - startTime.time,
-    val des: String = ssid.ssidDes
-)
+    val endTime: Date?,
+    val length: Long? = null//持续时长
+) {
+    fun getLength(): Long = length ?: (endTime ?: Date()).time - startTime.time
+    val des: String get() = ssid.ssidDes
+    val workLength: Long
+        get() {
+            //午休时间
+            val sleepTime =
+                if (apFormat.format(startTime).toInt() <= 12 &&
+                    apFormat.format(Date()).toInt() >= 14
+                ) (2 * 60 * 60 * 1000) else 0
+            return (endTime ?: Date()).time - startTime.time - sleepTime
+        }
+
+    companion object {
+        val apFormat = SimpleDateFormat("HH", Locale.CHINA)
+    }
+}
 
 
 class Converters {

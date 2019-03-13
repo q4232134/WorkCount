@@ -40,10 +40,6 @@
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
-        <com.github.mikephil.charting.charts.PieChart
-                android:id="@+id/mChart"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <include layout="@layout/content_scrolling"/>

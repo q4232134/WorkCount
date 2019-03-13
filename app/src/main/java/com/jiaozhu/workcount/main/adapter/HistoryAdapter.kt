@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.jiaozhu.workcount.R
 import com.jiaozhu.workcount.data.History
 import com.jiaozhu.workcount.data.Preferences
 import kotlinx.android.synthetic.main.item_content.view.*
@@ -24,7 +25,7 @@ public class HistoryAdapter(callback: DiffCallback<History> = DiffCallback()) :
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
         LayoutInflater.from(parent.context).inflate(
-            com.jiaozhu.workcount.R.layout.item_content, parent, false
+            R.layout.item_content, parent, false
         )
     )
 

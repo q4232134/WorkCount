@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -66,9 +67,15 @@ fun Activity.checkPermission(requestCode: Int, vararg permissions: String, runna
     }
 }
 
+fun notNull(vararg objs: Any?): Array<out Any>? {
+    if (objs.any { it == null }) return null
+    return arrayOf(objs)
+}
 
-fun Date.getStartTime(): Date {
+fun Date.getStartTime(type: Int? = null, value: Int? = null): Date {
     val todayStart = Calendar.getInstance()
+    todayStart.time = this
+    type?.run { value?.run { todayStart.set(type, value) } }
     todayStart.set(Calendar.HOUR_OF_DAY, 0)
     todayStart.set(Calendar.MINUTE, 0)
     todayStart.set(Calendar.SECOND, 0)
@@ -76,8 +83,10 @@ fun Date.getStartTime(): Date {
     return todayStart.time
 }
 
-fun Date.getEndTime(): Date {
+fun Date.getEndTime(type: Int? = null, value: Int? = null): Date {
     val todayEnd = Calendar.getInstance()
+    todayEnd.time = this
+    type?.run { value?.run { todayEnd.set(type, value) } }
     todayEnd.set(Calendar.HOUR_OF_DAY, 23)
     todayEnd.set(Calendar.MINUTE, 59)
     todayEnd.set(Calendar.SECOND, 59)
@@ -112,3 +121,9 @@ val Long.format: String
         return "$strDay $strHour:$strMinute:$strSecond"
     }
 
+
+val baseFormat = SimpleDateFormat("HH:mm", Locale.CHINA)
+fun Date.format(formatStr: String = "HH:mm"): String {
+    val dateFormat = if ("HH:mm" == formatStr) baseFormat else SimpleDateFormat(formatStr, Locale.CHINA)
+    return dateFormat.format(this)
+}

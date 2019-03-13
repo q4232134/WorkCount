@@ -2,7 +2,6 @@ package com.jiaozhu.workcount.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.alibaba.fastjson.JSON
 import com.jiaozhu.workcount.data.PrefSupport.Companion.context
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -31,18 +30,15 @@ class Preferences<T>(val name: String, private val default: T) : ReadWriteProper
         val prefs: SharedPreferences = context.getSharedPreferences(SHAREDPREFERENCES_NAME, Context.MODE_PRIVATE)
         var saveId: String? by Preferences("saveId", null)
         var savedssid: String? by Preferences("savedssid", "{}")
+        var targetDes: String? by Preferences("targetDes", "公司")//目标名称
 
         fun getString(key: String): String? = prefs.getString(key, null)
 
         fun setString(key: String, value: String) = prefs.edit().putString(key, value).apply()
+        {
+            prefs.all.filter { it.value == targetDes && it.key.contains("\"") }.map { key }
+        }
 
-        var ssid: Map<String, String>
-            get() {
-                return JSON.parseObject(savedssid, HashMap::class.java) as Map<String, String>
-            }
-            set(value) {
-                saveId = JSON.toJSONString(value)
-            }
     }
 
 
