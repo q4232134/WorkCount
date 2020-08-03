@@ -49,5 +49,7 @@ dependencies {
     implementation "android.arch.paging:rxjava2:1.0.1"
     implementation 'com.alibaba:fastjson:1.1.70.android'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0-alpha'
+    implementation 'ru.alexbykov:nopermission:1.1.2'
+    implementation 'com.afollestad.material-dialogs:datetime:3.0.0-beta2'
     debugImplementation 'com.amitshekhar.android:debug-db:1.0.4'
 }

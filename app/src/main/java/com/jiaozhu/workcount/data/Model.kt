@@ -43,16 +43,22 @@ interface HistoryDao : BaseDao<History> {
     fun getList(): DataSource.Factory<Int, History>
 
     @Query("select * from History where id = (select max(id) from History)")
-    fun getLastNode(): History
+    fun getLastNode(): History?
+
+    /**
+     * 跟据创建时间获取节点
+     */
+    @Query("select * from History where createTime = :date")
+    fun getNodeByTime(date: Date): History?
 
     @Query("select * from History where id = (select max(id) from History)")
-    fun getLastNodeLive(): LiveData<History>;
+    fun getLastNodeLive(): LiveData<History?>
 
     /**
      * 获取当前wifi名称
      */
     @Query("select ssid from History where id = (select max(id) from History)")
-    fun getLastNodeName(): LiveData<String>
+    fun getLastNodeName(): LiveData<String?>
 
     @Query("select * from History where createTime between :start and :end")
     fun getNodeByTime(start: Date, end: Date): LiveData<List<History>>

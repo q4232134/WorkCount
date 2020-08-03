@@ -1,5 +1,6 @@
 package com.jiaozhu.workcount.main
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
@@ -13,8 +14,10 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import com.jiaozhu.workcount.CApplication
-import com.jiaozhu.workcount.R
-import com.jiaozhu.workcount.data.*
+import com.jiaozhu.workcount.data.HistoryDao
+import com.jiaozhu.workcount.data.Preferences
+import com.jiaozhu.workcount.data.WorkCount
+import com.jiaozhu.workcount.data.ssidDes
 import com.jiaozhu.workcount.main.adapter.CountAdapter
 import com.jiaozhu.workcount.main.adapter.OnItemLongClickListener
 import com.jiaozhu.workcount.main.viewModel.ScrollingModel
@@ -25,6 +28,7 @@ import com.jiaozhu.workcount.utils.getStartTime
 import com.jiaozhu.workcount.utils.toast
 import kotlinx.android.synthetic.main.activity_scrolling.*
 import kotlinx.android.synthetic.main.content_scrolling.*
+import ru.alexbykov.nopermission.PermissionHelper
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,6 +38,7 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     lateinit var viewModel: ScrollingModel
     lateinit var adapter: CountAdapter
     lateinit var dialog: MaterialDialog
+    lateinit var permissionHelper: PermissionHelper
     private val apFormat = SimpleDateFormat("HH", Locale.CHINA)
     //午休时间
     val sleepTime
@@ -45,7 +50,7 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_scrolling)
+        setContentView(com.jiaozhu.workcount.R.layout.activity_scrolling)
         setSupportActionBar(toolbar)
         fab.setOnClickListener {
             genCountList(viewModel.showList)
@@ -69,7 +74,8 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
         initViewModel()
         val i = Intent(this, WorkService::class.java)
         startService(i)
-
+        permissionHelper = PermissionHelper(this)
+        getWifiSSidPermission()
     }
 
 
@@ -83,7 +89,7 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
         adapter.onItemLongClickListener = this
         mRecyclerView.adapter = adapter
         viewModel.lastNodeName.observe(this, Observer {
-            toolbar_layout.title = it.ssidDes
+            toolbar_layout.title = it?.ssidDes
         })
         viewModel.historyList.observe(this, Observer {
             viewModel.firstTargetNode = it.firstOrNull { it.ssid.ssidDes == Preferences.targetDes }
@@ -93,11 +99,11 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
         })
         viewModel.lastNode.observe(
             this,
-            Observer<History> {
+            Observer {
                 //如果当前地点为公司，则显示公司总工作时长，否则显示当前地点时长
                 val startTime =
                     if (viewModel.lastNodeName.value?.ssidDes == Preferences.targetDes) (viewModel.firstTargetNode?.createTime
-                        ?: Date()).time + sleepTime else it.createTime.time
+                        ?: Date()).time + sleepTime else it?.createTime?.time ?: Date().time
                 mMeter.base = SystemClock.elapsedRealtime() - (Date().time - startTime)
                 mMeter.start()
             })
@@ -105,13 +111,13 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_scrolling, menu)
+        menuInflater.inflate(com.jiaozhu.workcount.R.menu.menu_scrolling, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_history -> {
+            com.jiaozhu.workcount.R.id.action_history -> {
                 val i = Intent(this, HistoryActivity::class.java)
                 startActivity(i)
                 return true
@@ -158,4 +164,18 @@ class ScrollingActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount
     }
 
 
+    private fun getWifiSSidPermission() {
+        permissionHelper.check(Manifest.permission.ACCESS_FINE_LOCATION)
+            .onSuccess { }.onDenied { getWifiSSidPermission() }
+            .onNeverAskAgain {
+                toast("权限被拒绝，9.0系统无法获取SSID")
+                finish()
+            }.run()
+    }
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        permissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 }
+

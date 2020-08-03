@@ -34,10 +34,11 @@ class Preferences<T>(val name: String, private val default: T) : ReadWriteProper
 
         fun getString(key: String): String? = prefs.getString(key, null)
 
-        fun setString(key: String, value: String) = prefs.edit().putString(key, value).apply()
-        {
-            prefs.all.filter { it.value == targetDes && it.key.contains("\"") }.map { key }
-        }
+        fun setString(key: String, value: String) = prefs.edit().putString(key, value).commit()
+//            .apply()
+//        {
+//            prefs.all.filter { it.value == targetDes && it.key.contains("\"") }.map { key }
+//        }
 
     }
 

@@ -9,6 +9,7 @@
         tools:showIn="@layout/activity_history"
         tools:context=".main.HistoryActivity">
 
+
     <TextView
             android:id="@+id/mHisText"
             android:layout_width="wrap_content"
@@ -18,14 +19,30 @@
             android:layout_margin="5dp"
             tools:text="123"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/mHisRecyclerView"/>
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toStartOf="@+id/mHisRecyclerView"/>
+
+    <TextView
+            android:id="@+id/mHisTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:ignore="MissingConstraints"
+            android:textSize="16sp"
+            android:layout_margin="5dp"
+            tools:text="123"
+            android:textColor="@android:color/darker_gray"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/mHisRecyclerView"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/mHisText"
+            android:layout_marginTop="8dp"/>
 
     <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/mHisRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="625dp"
             android:layout_margin="@dimen/text_margin"
-            app:layout_constraintTop_toBottomOf="@+id/mHisText"
+            app:layout_constraintTop_toBottomOf="@+id/mHisTag"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginBottom="8dp"
             app:layout_constraintBottom_toBottomOf="parent"

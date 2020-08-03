@@ -7,12 +7,15 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.datetime.dateTimePicker
 import com.jiaozhu.workcount.CApplication
 import com.jiaozhu.workcount.R
 import com.jiaozhu.workcount.data.HistoryDao
 import com.jiaozhu.workcount.data.Preferences
 import com.jiaozhu.workcount.data.WorkCount
 import com.jiaozhu.workcount.main.adapter.CountHisAdapter
+import com.jiaozhu.workcount.main.adapter.OnItemLongClickListener
 import com.jiaozhu.workcount.main.viewModel.HistoryModel
 import com.jiaozhu.workcount.utils.format
 import com.jiaozhu.workcount.utils.getEndTime
@@ -21,7 +24,23 @@ import kotlinx.android.synthetic.main.activity_history.*
 import kotlinx.android.synthetic.main.content_history.*
 import java.util.*
 
-class HistoryActivity : AppCompatActivity() {
+class HistoryActivity : AppCompatActivity(), OnItemLongClickListener<WorkCount> {
+    //长按item调整结束时间
+    override fun onItemLongClick(model: WorkCount, position: Int): Boolean {
+        model.endTime?.let {
+            MaterialDialog(this).show {
+                dateTimePicker(currentDateTime = Calendar.getInstance().apply {
+                    timeInMillis = it.time
+                }) { _, date ->
+                    val temp = historyDao.getNodeByTime(it) ?: return@dateTimePicker
+                    temp.createTime = date.time
+                    historyDao.replace(temp)
+                }
+            }
+        }
+        return true
+    }
+
 
     lateinit var historyDao: HistoryDao
     lateinit var viewModel: HistoryModel
@@ -40,7 +59,7 @@ class HistoryActivity : AppCompatActivity() {
 
     private fun initViewModel() {
         mHisRecyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = CountHisAdapter()
+        adapter = CountHisAdapter().apply { onItemLongClickListener = this@HistoryActivity }
         mHisRecyclerView.adapter = adapter
 
         viewModel = ViewModelProviders.of(this).get(HistoryModel::class.java)
@@ -53,6 +72,9 @@ class HistoryActivity : AppCompatActivity() {
                         it
                     )
                 }} 小时"
+            mHisTag.text = "${String.format(
+                "%.2f",
+                it.sumByDouble { it.workLength.toDouble() } / (it.size * 60 * 60 * 1000).let { if (it == 0) 1 else it })}小时/天"
         })
         viewModel.currentDate.value = Date()
         viewModel.currentDate.observe(this, androidx.lifecycle.Observer {
@@ -68,7 +90,7 @@ class HistoryActivity : AppCompatActivity() {
                 Calendar.DAY_OF_MONTH,
                 Calendar.getInstance().apply { time = date }.getActualMaximum(Calendar.DATE)
             ),
-            Preferences.prefs.all.filter { it.value == Preferences.targetDes && it.key.contains("\"") }.map { it.key })
+            Preferences.prefs.all.filter { it.value == Preferences.targetDes }.map { it.key })
     }
 
 
